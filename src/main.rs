@@ -38,7 +38,6 @@ fn resize_jpg(file: &Path, longest_edge: u32) -> ImageResult<()> {
     let output_path = Path::new("thumbs").join(file);
 
     let ref mut fout = File::create(output_path.as_path())?;
-
     let _ = img.save(fout, image::JPEG)?;
 
     Ok(())
@@ -46,7 +45,7 @@ fn resize_jpg(file: &Path, longest_edge: u32) -> ImageResult<()> {
 
 fn sequential(files: &[PathBuf], longest_edge: u32) -> ImageResult<()> {
     fs::create_dir_all("thumbs").expect("Couldn't make thumbnail directory");
-    
+
     for jpg in files.iter() {
         resize_jpg(jpg, longest_edge)?;
     }
@@ -56,20 +55,16 @@ fn sequential(files: &[PathBuf], longest_edge: u32) -> ImageResult<()> {
 fn parallel(files: &[PathBuf], longest_edge: u32) -> ImageResult<()> {
     fs::create_dir_all("thumbs")?;
 
-    files.par_iter().for_each(|jpg| {
-        match resize_jpg(jpg, longest_edge) {
-            Ok(_) => (),
-            Err(e) => (),
-        }
-    });
+    files
+        .par_iter()
+        .for_each(|jpg| { resize_jpg(jpg, longest_edge).unwrap(); });
 
     Ok(())
 }
 
 fn main() {
     let files = find_jpg();
-    println!("files: {:?}", files);
-    
+
     match sequential(&files, 300) {
         Ok(()) => println!("{} thumbnails saved", files.len()),
         Err(e) => println!("Failed to create all thumbnails: {:?}", e),
