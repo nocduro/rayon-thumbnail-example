@@ -1,0 +1,9 @@
+[package]
+name = "rayon_image"
+version = "0.1.0"
+authors = ["Mackenzie Hauck <mhauck@live.ca>"]
+
+[dependencies]
+glob = "0.2"
+rayon =  "0.8"
+image = "0.15"
