@@ -1,15 +1,23 @@
-
 extern crate glob;
 extern crate image;
 extern crate rayon;
 
-use glob::glob;
-use image::{ImageResult, FilterType};
 use std::path::{Path, PathBuf};
 use std::fs;
 use std::fs::File;
+
+use glob::glob;
+use image::{ImageResult, FilterType};
 use rayon::prelude::*;
 
+fn main() {
+    let files = find_jpg();
+    println!("Found {} files to convert", files.len());
+
+    for problem in parallel_resize(&files, Path::new("thumbnails"), 300) {
+        println!("{:?} failed with error: {}", problem.file_path, problem.err);
+    }
+}
 
 /// Find all files that have a `.jpg` extension in the current directory
 fn find_jpg() -> Vec<PathBuf> {
@@ -61,14 +69,4 @@ fn parallel_resize(files: &[PathBuf], thumb_dir: &Path, longest_edge: u32) -> Ve
         })
         .filter_map(|x| x.err())
         .collect()
-}
-
-
-fn main() {
-    let files = find_jpg();
-    println!("Found {} files to convert", files.len());
-
-    for problem in parallel_resize(&files, Path::new("thumbnails"), 300) {
-        println!("{:?} failed with error: {}", problem.file_path, problem.err);
-    }
 }
