@@ -6,14 +6,14 @@ use std::path::{Path, PathBuf};
 use std::fs;
 use std::fs::File;
 
-use glob::glob;
-use image::{ImageResult, FilterType};
+use glob::{glob_with, MatchOptions};
+use image::{FilterType, ImageResult};
 use rayon::prelude::*;
 
 fn main() {
     let files = find_jpg();
     println!("Found {} files to convert", files.len());
-
+    
     for problem in parallel_resize(&files, Path::new("thumbnails"), 300) {
         println!("{:?} failed with error: {}", problem.file_path, problem.err);
     }
@@ -23,7 +23,13 @@ fn main() {
 fn find_jpg() -> Vec<PathBuf> {
     let mut paths = Vec::new();
 
-    for entry in glob("*.jpg").expect("Failed to read glob pattern") {
+    let options = MatchOptions {
+        case_sensitive: false,
+        require_literal_separator: false,
+        require_literal_leading_dot: false,
+    };
+
+    for entry in glob_with("*.jpg", &options).expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => paths.push(path),
             Err(e) => println!("Error with: {:?}", e),
