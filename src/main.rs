@@ -56,6 +56,7 @@ struct ImageProblem {
 }
 
 /// Wrapper for `resize_jpg` to resize multiple images at the same time with rayon
+/// Returns a vector of the files that had an error during conversion, along with the actual error
 fn parallel_resize(files: &[PathBuf], thumb_dir: &Path, longest_edge: u32) -> Vec<ImageProblem> {
     files
         .par_iter()
