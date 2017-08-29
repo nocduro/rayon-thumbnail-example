@@ -10,20 +10,14 @@ use std::fs;
 use std::fs::File;
 use rayon::prelude::*;
 
+
+/// Find all files that have a `.jpg` extension in the current directory
 fn find_jpg() -> Vec<PathBuf> {
     let mut paths = Vec::new();
 
     for entry in glob("*.jpg").expect("Failed to read glob pattern") {
         match entry {
-            Ok(path) => {
-                if let Some(parent) = path.parent() {
-                    if parent.ends_with("thumbs") {
-                        // skip already generated thumbnails
-                        continue;
-                    }
-                }
-                paths.push(path);
-            }
+            Ok(path) => paths.push(path),
             Err(e) => println!("Error with: {:?}", e),
         }
     }
@@ -31,7 +25,10 @@ fn find_jpg() -> Vec<PathBuf> {
     paths
 }
 
+/// Resize `file` to have a maximum dimension of `longest_edge` and save the resized
+/// image to the `thumb_dir` folder
 fn resize_jpg(file: &Path, thumb_dir: &Path, longest_edge: u32) -> ImageResult<()> {
+    // create the folder if it doesn't exist
     fs::create_dir_all(thumb_dir)?;
     let img = image::open(file)?;
     let img = img.resize(longest_edge, longest_edge, FilterType::Nearest);
@@ -39,35 +36,26 @@ fn resize_jpg(file: &Path, thumb_dir: &Path, longest_edge: u32) -> ImageResult<(
     let output_path = thumb_dir.join(file);
 
     let ref mut fout = File::create(output_path.as_path())?;
-    let _ = img.save(fout, image::JPEG)?;
+    img.save(fout, image::JPEG)?;
 
     Ok(())
 }
-/*
-fn sequential(files: &[PathBuf], longest_edge: u32) -> ImageResult<()> {
-    fs::create_dir_all("thumbs")?;
-
-    for jpg in files.iter() {
-        resize_jpg(jpg, longest_edge)?;
-    }
-    Ok(())
-}*/
 
 #[derive(Debug)]
 struct ImageProblem {
     file_path: PathBuf,
-    error: image::ImageError,
+    err: image::ImageError,
 }
 
-fn parallel(files: &[PathBuf], thumb_dir: &Path, longest_edge: u32) -> Vec<ImageProblem> {
-    //fs::create_dir_all("thumbs").map_err(|e| ImageProblem{file_path: "thumbs", error: e});
+/// Wrapper for `resize_jpg` to resize multiple images at the same time with rayon
+fn parallel_resize(files: &[PathBuf], thumb_dir: &Path, longest_edge: u32) -> Vec<ImageProblem> {
     files
         .par_iter()
         .map(|path| {
             resize_jpg(path, thumb_dir, longest_edge).map_err(|e| {
                 ImageProblem {
                     file_path: path.clone(),
-                    error: e,
+                    err: e,
                 }
             })
         })
@@ -76,13 +64,11 @@ fn parallel(files: &[PathBuf], thumb_dir: &Path, longest_edge: u32) -> Vec<Image
 }
 
 
-
-
 fn main() {
     let files = find_jpg();
     println!("Found {} files to convert", files.len());
 
-    for problem in parallel(&files, Path::new("thumbnails"), 300) {
-        println!("{:?} failed with error: {}", problem.file_path, problem.error);
+    for problem in parallel_resize(&files, Path::new("thumbnails"), 300) {
+        println!("{:?} failed with error: {}", problem.file_path, problem.err);
     }
 }
