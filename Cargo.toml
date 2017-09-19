@@ -7,3 +7,4 @@ authors = ["Mackenzie Hauck <mhauck@live.ca>"]
 glob = "0.2"
 rayon =  "0.8"
 image = "0.15"
+error-chain = "0.11"
